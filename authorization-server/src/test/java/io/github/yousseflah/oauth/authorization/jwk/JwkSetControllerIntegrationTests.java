@@ -1,7 +1,5 @@
 package io.github.yousseflah.oauth.authorization.jwk;
 
-import java.util.List;
-
 import com.nimbusds.jose.jwk.JWKSet;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -28,8 +26,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class JwkSetControllerIntegrationTests {
 
-    private static final List<String> PRIVATE_RSA_PARAMETERS =
-            List.of("d", "p", "q", "dp", "dq", "qi", "oth");
     private static final MediaType JWK_SET_MEDIA_TYPE = MediaType.parseMediaType(JWKSet.MIME_TYPE);
 
     private final WebApplicationContext applicationContext;
@@ -74,7 +70,7 @@ class JwkSetControllerIntegrationTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.keys.length()").value(1));
 
-        for (var privateParameter : PRIVATE_RSA_PARAMETERS) {
+        for (var privateParameter : JwkTestConstants.RSA_PRIVATE_PARAMETERS) {
             resultActions.andExpect(jsonPath("$.keys[0]." + privateParameter).doesNotExist());
         }
     }

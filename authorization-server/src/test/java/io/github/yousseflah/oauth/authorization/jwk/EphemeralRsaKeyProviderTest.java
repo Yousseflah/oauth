@@ -1,6 +1,5 @@
 package io.github.yousseflah.oauth.authorization.jwk;
 
-import java.util.Set;
 import java.util.UUID;
 
 import com.nimbusds.jose.JWSAlgorithm;
@@ -16,9 +15,6 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class EphemeralRsaKeyProviderTest {
-
-    private static final Set<String> PRIVATE_RSA_PARAMETERS =
-            Set.of("d", "p", "q", "dp", "dq", "qi", "oth");
 
     private EphemeralRsaKeyProvider keyProvider;
 
@@ -43,7 +39,8 @@ class EphemeralRsaKeyProviderTest {
         var publicJwk = keyProvider.publicJwk();
 
         assertThat(publicJwk.isPrivate()).isFalse();
-        assertThat(publicJwk.toJSONObject()).doesNotContainKeys(PRIVATE_RSA_PARAMETERS.toArray(String[]::new));
+        assertThat(publicJwk.toJSONObject())
+                .doesNotContainKeys(JwkTestConstants.RSA_PRIVATE_PARAMETERS.toArray(String[]::new));
     }
 
     @Test

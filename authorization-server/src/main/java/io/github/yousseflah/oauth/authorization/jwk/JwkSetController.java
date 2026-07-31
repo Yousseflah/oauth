@@ -11,13 +11,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/oauth2")
-public class JwkSetController {
+class JwkSetController {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JwkSetController.class);
 
     private final EphemeralRsaKeyProvider keyProvider;
 
-    public JwkSetController(EphemeralRsaKeyProvider keyProvider) {
+    JwkSetController(EphemeralRsaKeyProvider keyProvider) {
         this.keyProvider = keyProvider;
     }
 

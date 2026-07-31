@@ -1,5 +1,7 @@
 package io.github.yousseflah.oauth.authorization.config;
 
+import java.time.Clock;
+
 import io.github.yousseflah.oauth.authorization.jwk.EphemeralRsaKeyProvider;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -18,5 +20,10 @@ public class JwtConfiguration {
     @Bean
     JwtEncoder jwtEncoder(EphemeralRsaKeyProvider keyProvider) {
         return keyProvider.jwtEncoder();
+    }
+
+    @Bean
+    Clock clock() {
+        return Clock.systemUTC();
     }
 }

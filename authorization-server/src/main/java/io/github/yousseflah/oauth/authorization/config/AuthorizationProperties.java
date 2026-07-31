@@ -19,6 +19,7 @@ public record AuthorizationProperties(
         @NotNull @Pattern(regexp = "oauth-mini\\+jwt") String tokenType,
         @NotNull Duration accessTokenTtl) {
 
+    private static final Duration MIN_ACCESS_TOKEN_TTL = Duration.ofSeconds(1);
     private static final Duration MAX_ACCESS_TOKEN_TTL = Duration.ofMinutes(15);
 
     @AssertTrue(message = "must be an absolute HTTP or HTTPS URI without user info, query, or fragment")
@@ -36,11 +37,11 @@ public record AuthorizationProperties(
                 || "https".equalsIgnoreCase(issuer.getScheme());
     }
 
-    @AssertTrue(message = "must be greater than zero and no more than 15 minutes")
+    @AssertTrue(message = "must be a whole number of seconds between 1 second and 15 minutes")
     public boolean isAccessTokenTtlValid() {
         return accessTokenTtl != null
-                && !accessTokenTtl.isZero()
-                && !accessTokenTtl.isNegative()
+                && accessTokenTtl.compareTo(MIN_ACCESS_TOKEN_TTL) >= 0
+                && accessTokenTtl.getNano() == 0
                 && accessTokenTtl.compareTo(MAX_ACCESS_TOKEN_TTL) <= 0;
     }
 }

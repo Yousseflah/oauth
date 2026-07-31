@@ -52,6 +52,17 @@ class AuthorizationPropertiesTest {
         assertThat(validator.validate(properties)).isEmpty();
     }
 
+    @Test
+    void acceptsMinimumAccessTokenTtl() {
+        var properties = new AuthorizationProperties(
+                URI.create("http://localhost:9000"),
+                "mini-resource-server",
+                "oauth-mini+jwt",
+                Duration.ofSeconds(1));
+
+        assertThat(validator.validate(properties)).isEmpty();
+    }
+
     @ParameterizedTest
     @MethodSource("invalidProperties")
     void rejectsInvalidSecurityProperties(AuthorizationProperties properties, String expectedPropertyPath) {
@@ -96,6 +107,13 @@ class AuthorizationPropertiesTest {
                                 "mini-resource-server",
                                 "oauth-mini+jwt",
                                 Duration.ZERO),
+                        "accessTokenTtlValid"),
+                Arguments.of(
+                        new AuthorizationProperties(
+                                URI.create("http://localhost:9000"),
+                                "mini-resource-server",
+                                "oauth-mini+jwt",
+                                Duration.ofMillis(1500)),
                         "accessTokenTtlValid"),
                 Arguments.of(
                         new AuthorizationProperties(

@@ -38,8 +38,9 @@ final class TokenService {
 
     IssuedToken issueToken(String subject) {
         var normalizedSubject = subjectNormalizer.normalize(subject);
+        var accessTokenTtl = securityProperties.accessTokenTtl();
         var issuedAt = clock.instant().truncatedTo(ChronoUnit.SECONDS);
-        var expiresAt = issuedAt.plus(securityProperties.accessTokenTtl());
+        var expiresAt = issuedAt.plus(accessTokenTtl);
         var tokenId = UUID.randomUUID().toString();
 
         var headers = JwsHeader.with(SignatureAlgorithm.RS256)
@@ -56,6 +57,6 @@ final class TokenService {
         var jwt = jwtEncoder.encode(JwtEncoderParameters.from(headers, claims));
 
         LOGGER.info("Issued access token with jti={} and expiresAt={}", tokenId, expiresAt);
-        return new IssuedToken(jwt.getTokenValue(), securityProperties.accessTokenTtl().toSeconds());
+        return new IssuedToken(jwt.getTokenValue(), accessTokenTtl.toSeconds());
     }
 }

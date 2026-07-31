@@ -4,6 +4,8 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import com.nimbusds.jose.JWSAlgorithm;
@@ -22,13 +24,14 @@ public final class EphemeralRsaKeyProvider {
     private static final Logger LOGGER = LoggerFactory.getLogger(EphemeralRsaKeyProvider.class);
     private static final int RSA_KEY_SIZE = 2048;
 
-    private final RSAKey privateJwk;
     private final RSAKey publicJwk;
+    private final Map<String, Object> publicJwkSet;
     private final JwtEncoder jwtEncoder;
 
     public EphemeralRsaKeyProvider() {
-        privateJwk = generatePrivateJwk();
+        var privateJwk = generatePrivateJwk();
         publicJwk = privateJwk.toPublicJWK();
+        publicJwkSet = Map.of("keys", List.of(Map.copyOf(publicJwk.toJSONObject())));
         var jwkSource = new ImmutableJWKSet<SecurityContext>(new JWKSet(privateJwk));
         jwtEncoder = new NimbusJwtEncoder(jwkSource);
 
@@ -40,6 +43,10 @@ public final class EphemeralRsaKeyProvider {
 
     public RSAKey publicJwk() {
         return publicJwk;
+    }
+
+    public Map<String, Object> publicJwkSet() {
+        return publicJwkSet;
     }
 
     public JwtEncoder jwtEncoder() {

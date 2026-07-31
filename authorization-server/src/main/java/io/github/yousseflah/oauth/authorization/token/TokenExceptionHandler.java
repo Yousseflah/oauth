@@ -13,21 +13,14 @@ final class TokenExceptionHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(TokenExceptionHandler.class);
     private static final String PROBLEM_TITLE = "Invalid token request";
 
-    @ExceptionHandler(InvalidSubjectException.class)
-    ProblemDetail handleInvalidSubject(InvalidSubjectException exception) {
-        LOGGER.warn("Rejected token request because subject validation failed");
-        return badRequest(exception.getMessage());
-    }
-
-    @ExceptionHandler(MissingSubjectException.class)
-    ProblemDetail handleMissingSubject(MissingSubjectException exception) {
-        LOGGER.warn("Rejected token request because the subject form parameter is missing");
-        return badRequest(exception.getMessage());
-    }
-
-    @ExceptionHandler(QueryParametersNotAllowedException.class)
-    ProblemDetail handleQueryParametersNotAllowed(QueryParametersNotAllowedException exception) {
-        LOGGER.warn("Rejected token request because query parameters are not allowed");
+    @ExceptionHandler({
+        InvalidSubjectException.class,
+        MissingSubjectException.class,
+        QueryParametersNotAllowedException.class
+    })
+    ProblemDetail handleInvalidTokenRequest(IllegalArgumentException exception) {
+        // Every allowlisted exception has a fixed message that never includes caller input.
+        LOGGER.warn("Rejected token request: {}", exception.getMessage());
         return badRequest(exception.getMessage());
     }
 

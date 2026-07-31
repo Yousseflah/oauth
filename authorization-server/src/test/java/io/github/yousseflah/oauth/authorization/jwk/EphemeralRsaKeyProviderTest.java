@@ -1,5 +1,7 @@
 package io.github.yousseflah.oauth.authorization.jwk;
 
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import com.nimbusds.jose.JWSAlgorithm;
@@ -12,6 +14,7 @@ import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class EphemeralRsaKeyProviderTest {
@@ -41,6 +44,20 @@ class EphemeralRsaKeyProviderTest {
         assertThat(publicJwk.isPrivate()).isFalse();
         assertThat(publicJwk.toJSONObject())
                 .doesNotContainKeys(JwkTestConstants.RSA_PRIVATE_PARAMETERS.toArray(String[]::new));
+    }
+
+    @Test
+    void cachesAnImmutablePublicJwkSetDocument() {
+        var publicJwkSet = keyProvider.publicJwkSet();
+
+        assertThat(keyProvider.publicJwkSet()).isSameAs(publicJwkSet);
+        assertThatThrownBy(publicJwkSet::clear).isInstanceOf(UnsupportedOperationException.class);
+
+        var keys = (List<?>) publicJwkSet.get("keys");
+        assertThatThrownBy(keys::clear).isInstanceOf(UnsupportedOperationException.class);
+
+        var publicKey = (Map<?, ?>) keys.getFirst();
+        assertThatThrownBy(publicKey::clear).isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test

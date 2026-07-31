@@ -22,9 +22,9 @@ class JwkSetController {
     }
 
     @GetMapping(value = "/jwks", produces = JWKSet.MIME_TYPE)
-    public Map<String, Object> getJwkSet() {
+    Map<String, Object> getJwkSet() {
         var publicJwk = keyProvider.publicJwk();
         LOGGER.debug("Publishing public JWKS with kid={}", publicJwk.getKeyID());
-        return new JWKSet(publicJwk).toJSONObject();
+        return keyProvider.publicJwkSet();
     }
 }

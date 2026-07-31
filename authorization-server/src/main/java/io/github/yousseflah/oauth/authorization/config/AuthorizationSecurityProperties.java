@@ -24,18 +24,22 @@ public record AuthorizationSecurityProperties(
 
     @AssertTrue(message = "must be an absolute HTTP or HTTPS origin URI without user info, path, query, or fragment")
     public boolean isIssuerValid() {
-        if (issuer == null
-                || !issuer.isAbsolute()
-                || issuer.getHost() == null
-                || issuer.getUserInfo() != null
-                || (issuer.getRawPath() != null && !issuer.getRawPath().isEmpty())
-                || issuer.getQuery() != null
-                || issuer.getFragment() != null) {
+        return isAbsoluteHttpUri(issuer)
+                && (issuer.getRawPath() == null || issuer.getRawPath().isEmpty())
+                && issuer.getRawQuery() == null;
+    }
+
+    private static boolean isAbsoluteHttpUri(URI uri) {
+        if (uri == null
+                || !uri.isAbsolute()
+                || uri.getHost() == null
+                || uri.getUserInfo() != null
+                || uri.getFragment() != null) {
             return false;
         }
 
-        return "http".equalsIgnoreCase(issuer.getScheme())
-                || "https".equalsIgnoreCase(issuer.getScheme());
+        return "http".equalsIgnoreCase(uri.getScheme())
+                || "https".equalsIgnoreCase(uri.getScheme());
     }
 
     @AssertTrue(message = "must be a whole number of seconds between 1 second and 15 minutes")

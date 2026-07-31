@@ -1,0 +1,14 @@
+OAuth2-JWT-interview-notes.md
+Défi technique - Portage Cybertech.pdf
+
+# Maven
+target/
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+
+# Operating systems
+.DS_Store
+Thumbs.db

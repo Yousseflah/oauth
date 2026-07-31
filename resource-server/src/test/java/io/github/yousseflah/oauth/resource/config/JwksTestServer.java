@@ -56,7 +56,7 @@ final class JwksTestServer implements AutoCloseable {
                 return;
             }
 
-            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            exchange.getResponseHeaders().set("Content-Type", JWKSet.MIME_TYPE);
             exchange.sendResponseHeaders(200, responseBody.length);
             exchange.getResponseBody().write(responseBody);
         }

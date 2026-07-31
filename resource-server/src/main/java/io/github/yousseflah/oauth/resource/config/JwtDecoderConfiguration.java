@@ -10,6 +10,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
+import org.springframework.security.oauth2.jwt.JwtClaimNames;
+import org.springframework.security.oauth2.jwt.JwtClaimValidator;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtIssuerValidator;
 import org.springframework.security.oauth2.jwt.JwtTimestampValidator;
@@ -50,6 +52,9 @@ class JwtDecoderConfiguration {
                 timestampValidator,
                 new JwtIssuerValidator(properties.issuer().toString()),
                 new AudienceValidator(properties.audience()),
+                new JwtClaimValidator<String>(
+                        JwtClaimNames.SUB,
+                        subject -> subject != null && !subject.isBlank()),
                 new JwtTypeValidator(properties.tokenType())));
 
         LOGGER.info(

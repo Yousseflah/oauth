@@ -88,6 +88,27 @@ class JwtDecoderIntegrationTests {
     }
 
     @Test
+    void rejectsMissingAudience() throws JOSEException {
+        var token = sign(baseClaims().subject("alice").build(), TOKEN_TYPE);
+
+        assertRejected(token);
+    }
+
+    @Test
+    void rejectsMissingSubject() throws JOSEException {
+        var token = sign(baseClaims().audience(AUDIENCE).build(), TOKEN_TYPE);
+
+        assertRejected(token);
+    }
+
+    @Test
+    void rejectsBlankSubject() throws JOSEException {
+        var token = sign(validClaims().subject(" ").build(), TOKEN_TYPE);
+
+        assertRejected(token);
+    }
+
+    @Test
     void rejectsExpiredTokenOutsideTheAllowedClockSkew() throws JOSEException {
         var now = Instant.now().truncatedTo(ChronoUnit.SECONDS);
         var token = sign(validClaims()
@@ -119,11 +140,15 @@ class JwtDecoderIntegrationTests {
     }
 
     private static JWTClaimsSet.Builder validClaims() {
+        return baseClaims()
+                .subject("alice")
+                .audience(AUDIENCE);
+    }
+
+    private static JWTClaimsSet.Builder baseClaims() {
         var now = Instant.now().truncatedTo(ChronoUnit.SECONDS);
         return new JWTClaimsSet.Builder()
                 .issuer(JWKS_SERVER.issuer().toString())
-                .subject("alice")
-                .audience(AUDIENCE)
                 .issueTime(Date.from(now))
                 .expirationTime(Date.from(now.plus(Duration.ofMinutes(5))))
                 .jwtID(UUID.randomUUID().toString());

@@ -387,6 +387,7 @@ The decoder wiring must follow this sequence:
    - The timestamp validator
    - `JwtIssuerValidator` with the configured issuer
    - A small audience validator requiring the configured audience
+   - A subject validator requiring a nonblank `sub` claim
    - `JwtTypeValidator` requiring exactly the configured `oauth-mini+jwt`
 
 The intended structure is:
@@ -405,6 +406,9 @@ decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(
         timestampValidator,
         new JwtIssuerValidator(properties.issuer().toString()),
         new AudienceValidator(properties.audience()),
+        new JwtClaimValidator<String>(
+                JwtClaimNames.SUB,
+                subject -> subject != null && !subject.isBlank()),
         new JwtTypeValidator(properties.tokenType())));
 ```
 

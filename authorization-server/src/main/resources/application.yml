@@ -4,3 +4,10 @@ spring:
 
 server:
   port: 9000
+
+application:
+  security:
+    issuer: http://localhost:9000
+    audience: mini-resource-server
+    token-type: oauth-mini+jwt
+    access-token-ttl: 5m

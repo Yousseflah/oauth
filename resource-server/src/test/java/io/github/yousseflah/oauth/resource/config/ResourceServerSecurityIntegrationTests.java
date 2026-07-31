@@ -103,8 +103,8 @@ class ResourceServerSecurityIntegrationTests {
     void deniesSpringProtectedResourceMetadataEndpoints(String endpoint) throws Exception {
         mockMvc.perform(get(endpoint)
                         .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isForbidden())
-                .andExpect(header().doesNotExist(HttpHeaders.WWW_AUTHENTICATE));
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string(HttpHeaders.WWW_AUTHENTICATE, "Bearer"));
     }
 
     @Test

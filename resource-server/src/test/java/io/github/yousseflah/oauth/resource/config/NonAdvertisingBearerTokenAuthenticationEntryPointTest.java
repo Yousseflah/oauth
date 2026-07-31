@@ -28,7 +28,9 @@ class NonAdvertisingBearerTokenAuthenticationEntryPointTest {
 
         assertThat(response.getHeader(HttpHeaders.WWW_AUTHENTICATE))
                 .startsWith("Bearer error=\"invalid_token\"")
-                .doesNotContain("resource_metadata");
+                .contains("error_description=", "error_uri=")
+                .doesNotContain("resource_metadata")
+                .doesNotMatch(".*[,\\s]$");
     }
 
     private MockHttpServletResponse commence(AuthenticationException authenticationException) throws Exception {

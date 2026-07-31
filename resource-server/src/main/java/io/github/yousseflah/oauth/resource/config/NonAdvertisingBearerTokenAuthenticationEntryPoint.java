@@ -14,7 +14,7 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 final class NonAdvertisingBearerTokenAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
     private static final Pattern RESOURCE_METADATA_PARAMETER =
-            Pattern.compile("(?:,| )resource_metadata=\"[^\"]*\"$");
+            Pattern.compile("(?:,\\s*|\\s+)resource_metadata=\"[^\"]*\"$");
 
     private final BearerTokenAuthenticationEntryPoint delegate = new BearerTokenAuthenticationEntryPoint();
 

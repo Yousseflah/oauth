@@ -20,11 +20,14 @@ class SecurityConfiguration {
     @Bean
     @Order(1)
     SecurityFilterChain denyProtectedResourceMetadataEndpoint(HttpSecurity http) throws Exception {
+        var bearerEntryPoint = new NonAdvertisingBearerTokenAuthenticationEntryPoint();
+
         statelessApi(http)
                 // Spring Security 7.1 publishes this endpoint ahead of authorization rules;
                 // shadow it to keep the requested API surface exact.
                 .securityMatcher(PROTECTED_RESOURCE_METADATA_ENDPOINT_PATTERN)
-                .authorizeHttpRequests(authorize -> authorize.anyRequest().denyAll());
+                .authorizeHttpRequests(authorize -> authorize.anyRequest().denyAll())
+                .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(bearerEntryPoint));
 
         return http.build();
     }

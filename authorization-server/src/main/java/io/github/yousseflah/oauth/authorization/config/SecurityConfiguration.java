@@ -23,6 +23,7 @@ public class SecurityConfiguration {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/tokens").permitAll()
                         .requestMatchers(HttpMethod.GET, "/oauth2/jwks").permitAll()
                         .anyRequest().denyAll());
 

@@ -12,7 +12,7 @@ import org.springframework.validation.annotation.Validated;
 
 @Validated
 @ConfigurationProperties("application.security")
-public record AuthorizationProperties(
+public record AuthorizationSecurityProperties(
         @NotNull URI issuer,
         @NotNull @Size(max = 100) @Pattern(regexp = "\\S+") String audience,
         // Keep the type visible in configuration, but pin it to prevent issuer/consumer contract drift.

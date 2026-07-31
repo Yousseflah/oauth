@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 
 @Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(AuthorizationProperties.class)
+@EnableConfigurationProperties(AuthorizationSecurityProperties.class)
 public class JwtConfiguration {
 
     @Bean

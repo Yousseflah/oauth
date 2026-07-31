@@ -21,8 +21,8 @@ record ResourceSecurityProperties(
         @NotNull Duration jwksConnectTimeout,
         @NotNull Duration jwksReadTimeout) {
 
-    private static final Duration MINIMUM_HTTP_TIMEOUT = Duration.ofMillis(1);
-    private static final Duration MAXIMUM_HTTP_TIMEOUT = Duration.ofSeconds(10);
+    private static final Duration MIN_HTTP_TIMEOUT = Duration.ofMillis(1);
+    private static final Duration MAX_HTTP_TIMEOUT = Duration.ofSeconds(10);
 
     @AssertTrue(message = "must be an absolute HTTP or HTTPS origin URI without user info, path, query, or fragment")
     boolean isIssuerValid() {
@@ -49,22 +49,22 @@ record ResourceSecurityProperties(
         return isBoundedTimeout(jwksReadTimeout);
     }
 
-    private static boolean isAbsoluteHttpUri(URI value) {
-        if (value == null
-                || !value.isAbsolute()
-                || value.getHost() == null
-                || value.getUserInfo() != null
-                || value.getFragment() != null) {
+    private static boolean isAbsoluteHttpUri(URI uri) {
+        if (uri == null
+                || !uri.isAbsolute()
+                || uri.getHost() == null
+                || uri.getUserInfo() != null
+                || uri.getFragment() != null) {
             return false;
         }
 
-        return "http".equalsIgnoreCase(value.getScheme())
-                || "https".equalsIgnoreCase(value.getScheme());
+        return "http".equalsIgnoreCase(uri.getScheme())
+                || "https".equalsIgnoreCase(uri.getScheme());
     }
 
-    private static boolean isBoundedTimeout(Duration value) {
-        return value != null
-                && value.compareTo(MINIMUM_HTTP_TIMEOUT) >= 0
-                && value.compareTo(MAXIMUM_HTTP_TIMEOUT) <= 0;
+    private static boolean isBoundedTimeout(Duration timeout) {
+        return timeout != null
+                && timeout.compareTo(MIN_HTTP_TIMEOUT) >= 0
+                && timeout.compareTo(MAX_HTTP_TIMEOUT) <= 0;
     }
 }

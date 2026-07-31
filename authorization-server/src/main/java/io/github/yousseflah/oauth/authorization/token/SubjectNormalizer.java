@@ -5,9 +5,9 @@ import java.util.regex.Pattern;
 import org.springframework.stereotype.Component;
 
 @Component
-final class SubjectValidator {
+final class SubjectNormalizer {
 
-    private static final Pattern ALLOWED_SUBJECT = Pattern.compile("[A-Za-z0-9._@-]{1,100}");
+    private static final Pattern ALLOWED_SUBJECT_PATTERN = Pattern.compile("[A-Za-z0-9._@-]{1,100}");
 
     String normalize(String subject) {
         if (subject == null) {
@@ -15,7 +15,7 @@ final class SubjectValidator {
         }
 
         var normalizedSubject = subject.strip();
-        if (!ALLOWED_SUBJECT.matcher(normalizedSubject).matches()) {
+        if (!ALLOWED_SUBJECT_PATTERN.matcher(normalizedSubject).matches()) {
             throw new InvalidSubjectException();
         }
 

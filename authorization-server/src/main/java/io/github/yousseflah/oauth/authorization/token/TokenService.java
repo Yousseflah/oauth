@@ -5,7 +5,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
-import io.github.yousseflah.oauth.authorization.config.AuthorizationProperties;
+import io.github.yousseflah.oauth.authorization.config.AuthorizationSecurityProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
@@ -21,34 +21,34 @@ final class TokenService {
     private static final Logger LOGGER = LoggerFactory.getLogger(TokenService.class);
 
     private final JwtEncoder jwtEncoder;
-    private final AuthorizationProperties properties;
-    private final SubjectValidator subjectValidator;
+    private final AuthorizationSecurityProperties securityProperties;
+    private final SubjectNormalizer subjectNormalizer;
     private final Clock clock;
 
     TokenService(
             JwtEncoder jwtEncoder,
-            AuthorizationProperties properties,
-            SubjectValidator subjectValidator,
+            AuthorizationSecurityProperties securityProperties,
+            SubjectNormalizer subjectNormalizer,
             Clock clock) {
         this.jwtEncoder = jwtEncoder;
-        this.properties = properties;
-        this.subjectValidator = subjectValidator;
+        this.securityProperties = securityProperties;
+        this.subjectNormalizer = subjectNormalizer;
         this.clock = clock;
     }
 
     IssuedToken issueToken(String subject) {
-        var normalizedSubject = subjectValidator.normalize(subject);
+        var normalizedSubject = subjectNormalizer.normalize(subject);
         var issuedAt = clock.instant().truncatedTo(ChronoUnit.SECONDS);
-        var expiresAt = issuedAt.plus(properties.accessTokenTtl());
+        var expiresAt = issuedAt.plus(securityProperties.accessTokenTtl());
         var tokenId = UUID.randomUUID().toString();
 
         var headers = JwsHeader.with(SignatureAlgorithm.RS256)
-                .type(properties.tokenType())
+                .type(securityProperties.tokenType())
                 .build();
         var claims = JwtClaimsSet.builder()
-                .issuer(properties.issuer().toString())
+                .issuer(securityProperties.issuer().toString())
                 .subject(normalizedSubject)
-                .audience(List.of(properties.audience()))
+                .audience(List.of(securityProperties.audience()))
                 .issuedAt(issuedAt)
                 .expiresAt(expiresAt)
                 .id(tokenId)
@@ -56,6 +56,6 @@ final class TokenService {
         var jwt = jwtEncoder.encode(JwtEncoderParameters.from(headers, claims));
 
         LOGGER.info("Issued access token with jti={} and expiresAt={}", tokenId, expiresAt);
-        return new IssuedToken(jwt.getTokenValue(), properties.accessTokenTtl().toSeconds());
+        return new IssuedToken(jwt.getTokenValue(), securityProperties.accessTokenTtl().toSeconds());
     }
 }

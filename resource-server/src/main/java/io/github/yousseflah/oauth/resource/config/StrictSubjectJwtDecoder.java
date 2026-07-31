@@ -10,8 +10,10 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 final class StrictSubjectJwtDecoder implements JwtDecoder {
 
-    private static final String INVALID_SUBJECT_TYPE =
+    private static final String INVALID_SUBJECT_TYPE_MESSAGE =
             "An error occurred while attempting to decode the Jwt: The token subject must be a string";
+    private static final String MALFORMED_TOKEN_MESSAGE =
+            "An error occurred while attempting to decode the Jwt: Malformed token";
 
     private final JwtDecoder delegate;
 
@@ -27,10 +29,10 @@ final class StrictSubjectJwtDecoder implements JwtDecoder {
             // Nimbus normalizes some registered claims; inspect the authenticated JWS payload for strict typing.
             var rawClaims = JWSObject.parse(token).getPayload().toJSONObject();
             if (rawClaims == null || !(rawClaims.get(JwtClaimNames.SUB) instanceof String)) {
-                throw new BadJwtException(INVALID_SUBJECT_TYPE);
+                throw new BadJwtException(INVALID_SUBJECT_TYPE_MESSAGE);
             }
         } catch (ParseException exception) {
-            throw new BadJwtException("An error occurred while attempting to decode the Jwt: Malformed token", exception);
+            throw new BadJwtException(MALFORMED_TOKEN_MESSAGE, exception);
         }
 
         return jwt;

@@ -9,13 +9,13 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-class SubjectValidatorTest {
+class SubjectNormalizerTest {
 
-    private final SubjectValidator subjectValidator = new SubjectValidator();
+    private final SubjectNormalizer subjectNormalizer = new SubjectNormalizer();
 
     @Test
     void trimsAndAcceptsAnAllowedSubject() {
-        assertThat(subjectValidator.normalize("  alice.smith-1@example.com_  "))
+        assertThat(subjectNormalizer.normalize("  alice.smith-1@example.com_  "))
                 .isEqualTo("alice.smith-1@example.com_");
     }
 
@@ -23,13 +23,13 @@ class SubjectValidatorTest {
     void acceptsTheMaximumLength() {
         var subject = "a".repeat(100);
 
-        assertThat(subjectValidator.normalize(subject)).isEqualTo(subject);
+        assertThat(subjectNormalizer.normalize(subject)).isEqualTo(subject);
     }
 
     @ParameterizedTest
     @MethodSource("invalidSubjects")
     void rejectsMissingBlankOversizedOrDisallowedSubjects(String subject) {
-        assertThatThrownBy(() -> subjectValidator.normalize(subject))
+        assertThatThrownBy(() -> subjectNormalizer.normalize(subject))
                 .isInstanceOf(InvalidSubjectException.class)
                 .hasMessage("subject must contain 1 to 100 letters, digits, '.', '_', '@', or '-'");
     }

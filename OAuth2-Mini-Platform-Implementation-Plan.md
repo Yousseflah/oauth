@@ -130,7 +130,7 @@ The services have separate responsibilities:
 │       │   ├── java/io/github/yousseflah/oauth/authorization/
 │       │   │   ├── AuthorizationServerApplication.java
 │       │   │   ├── config/
-│       │   │   │   ├── AuthorizationProperties.java
+│       │   │   │   ├── AuthorizationSecurityProperties.java
 │       │   │   │   ├── JwtConfiguration.java
 │       │   │   │   └── SecurityConfiguration.java
 │       │   │   ├── token/

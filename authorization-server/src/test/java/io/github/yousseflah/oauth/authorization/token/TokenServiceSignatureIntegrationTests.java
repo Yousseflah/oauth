@@ -14,13 +14,13 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-class TokenServiceSignatureIntegrationTest {
+class TokenServiceSignatureIntegrationTests {
 
     private final TokenService tokenService;
     private final EphemeralRsaKeyProvider keyProvider;
 
     @Autowired
-    TokenServiceSignatureIntegrationTest(TokenService tokenService, EphemeralRsaKeyProvider keyProvider) {
+    TokenServiceSignatureIntegrationTests(TokenService tokenService, EphemeralRsaKeyProvider keyProvider) {
         this.tokenService = tokenService;
         this.keyProvider = keyProvider;
     }

@@ -26,7 +26,7 @@ final class TokenExceptionHandler {
     }
 
     @ExceptionHandler(QueryParametersNotAllowedException.class)
-    ProblemDetail handleQueryParameters(QueryParametersNotAllowedException exception) {
+    ProblemDetail handleQueryParametersNotAllowed(QueryParametersNotAllowedException exception) {
         LOGGER.warn("Rejected token request because query parameters are not allowed");
         return badRequest(exception.getMessage());
     }

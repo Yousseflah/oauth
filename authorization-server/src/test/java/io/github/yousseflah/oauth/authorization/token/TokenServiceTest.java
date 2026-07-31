@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import io.github.yousseflah.oauth.authorization.config.AuthorizationProperties;
+import io.github.yousseflah.oauth.authorization.config.AuthorizationSecurityProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
@@ -34,7 +34,7 @@ class TokenServiceTest {
     @BeforeEach
     void setUpTokenService() {
         jwtEncoder = new CapturingJwtEncoder();
-        var properties = new AuthorizationProperties(
+        var securityProperties = new AuthorizationSecurityProperties(
                 URI.create("http://localhost:9000"),
                 "mini-resource-server",
                 "oauth-mini+jwt",
@@ -42,8 +42,8 @@ class TokenServiceTest {
         var clock = Clock.fixed(CLOCK_INSTANT, ZoneOffset.UTC);
         tokenService = new TokenService(
                 jwtEncoder,
-                properties,
-                new SubjectValidator(),
+                securityProperties,
+                new SubjectNormalizer(),
                 clock);
     }
 

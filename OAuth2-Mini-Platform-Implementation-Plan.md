@@ -76,7 +76,7 @@ Resource Server:
 - `spring-boot-starter-webmvc`
 - `spring-boot-starter-oauth2-resource-server`
 - `spring-boot-starter-validation`
-- `spring-boot-starter-test` with test scope
+- `spring-boot-starter-webmvc-test` with test scope
 - `spring-security-test` with test scope
 
 Use `spring-boot-starter-webmvc`, which is the non-deprecated Spring Boot 4 MVC starter. The key-change fixture can use the JDK's small built-in HTTP server and therefore needs no additional mock-server dependency.
@@ -425,13 +425,16 @@ Spring Security's remote JWKS support handles key selection by `kid` and refresh
 
 ### 8.3 Resource Server security chain
 
-Use a stateless `SecurityFilterChain`:
+Use explicit stateless `SecurityFilterChain` instances:
 
 - Require authentication for `GET /api/v1/hello`.
 - Deny all other requests by default.
 - Enable OAuth 2.0 Resource Server JWT support.
 - Disable sessions, form login, HTTP Basic, request caching, and CSRF.
 - Use Spring Security's bearer authentication entry point so `401` responses include the RFC 6750 `WWW-Authenticate` challenge.
+- Shadow and deny Spring Security 7.1's automatically registered RFC 9728 protected-resource metadata endpoint so it cannot expand the specified API surface or publish unsupported mTLS capability metadata.
+- Delegate bearer challenge generation to Spring Security, then remove its `resource_metadata` advertisement because that endpoint is deliberately unavailable.
+- Return the same `401` bearer challenge for unauthenticated mapped and unmapped requests so authentication is not an endpoint-discovery oracle; authenticated requests to unmapped routes return `403`.
 
 ### 8.4 HelloWorld endpoint
 
@@ -495,7 +498,7 @@ Subject validation tests:
 
 ### 10.3 Authorization Server integration tests
 
-Use `@SpringBootTest` with `@AutoConfigureMockMvc` and the real security filter chain:
+Use `@SpringBootTest` with the real security filter chain. The Authorization Server constructs `MockMvc` from the full `WebApplicationContext` and applies Spring Security explicitly; it does not rely on MVC test auto-configuration from a dependency that the module does not declare.
 
 - Valid form-encoded token request returns `200` and the documented response schema.
 - Missing or invalid subject returns `400`.
@@ -612,7 +615,7 @@ Apply the controls relevant to each OWASP API Security Top 10 category. This is 
 | API6 Unrestricted Access to Sensitive Business Flows | Treat token minting as sensitive; the lack of caller authentication is an explicit constraint and residual risk of the specification |
 | API7 Server-Side Request Forgery | Read the JWKS URI only from trusted startup configuration, never from request input |
 | API8 Security Misconfiguration | Stateless services, explicit security chains and algorithms, no default form login or generated user, and safe errors |
-| API9 Improper Inventory Management | Document the complete two-endpoint API surface and deny undocumented routes |
+| API9 Improper Inventory Management | Document the complete endpoint surface, deny undocumented routes, and explicitly shadow Spring Security 7.1's automatically registered protected-resource metadata endpoint |
 | API10 Unsafe Consumption of APIs | Trust only the configured JWKS origin; apply HTTP timeouts and let the JOSE library parse and validate returned key data |
 
 Additional rules:
@@ -796,7 +799,7 @@ Tasks:
 3. Implement `GET /api/v1/hello`.
 4. Produce the greeting from the already authenticated JWT subject.
 5. Preserve RFC 6750 bearer authentication challenges.
-6. Add full-context HTTP tests for a valid token, a missing token, the greeting, denied unknown routes, and `WWW-Authenticate`.
+6. Add full-context HTTP tests for a valid token, a missing token, the greeting, authenticated and unauthenticated unknown routes, the denied framework metadata route, and `WWW-Authenticate`.
 
 Completion condition:
 

@@ -18,6 +18,8 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -27,10 +29,6 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.matchesPattern;
-import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -79,11 +77,14 @@ class ResourceServerSecurityIntegrationTests {
     void rejectsMissingBearerTokenWithChallenge() throws Exception {
         mockMvc.perform(get("/api/v1/hello").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isUnauthorized())
-                .andExpect(header().string(
-                        HttpHeaders.WWW_AUTHENTICATE,
-                        allOf(
-                                matchesPattern("^Bearer(?: .+)?$"),
-                                not(containsString("error=")))));
+                .andExpect(header().string(HttpHeaders.WWW_AUTHENTICATE, "Bearer"));
+    }
+
+    @Test
+    void rejectsUnknownRoutesWithoutDisclosingWhetherTheyExist() throws Exception {
+        mockMvc.perform(get("/api/v1/unknown").accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string(HttpHeaders.WWW_AUTHENTICATE, "Bearer"));
     }
 
     @Test
@@ -92,6 +93,18 @@ class ResourceServerSecurityIntegrationTests {
                         .header(HttpHeaders.AUTHORIZATION, bearerAuthorization("alice"))
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isForbidden());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "/.well-known/oauth-protected-resource",
+        "/.well-known/oauth-protected-resource/api/v1/hello"
+    })
+    void deniesSpringProtectedResourceMetadataEndpoints(String endpoint) throws Exception {
+        mockMvc.perform(get(endpoint)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden())
+                .andExpect(header().doesNotExist(HttpHeaders.WWW_AUTHENTICATE));
     }
 
     @Test

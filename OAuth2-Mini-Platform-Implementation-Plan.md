@@ -197,7 +197,7 @@ Pragma: no-cache
 Rules:
 
 - `subject` is a required form parameter.
-- Document and demonstrate the subject in the form body rather than in the URL, reducing accidental exposure through request-line logs and history.
+- Accept the subject only in the form body; reject query strings on the token route to prevent exposure through request-line logs and history.
 - Trim leading and trailing whitespace.
 - Reject blank values.
 - Limit the normalized value to 100 characters.
@@ -285,6 +285,13 @@ Use type-safe `@ConfigurationProperties` for:
 ```yaml
 server:
   port: 9000
+  tomcat:
+    max-http-form-post-size: 16KB
+
+spring:
+  mvc:
+    problemdetails:
+      enabled: true
 
 application:
   security:
@@ -338,9 +345,10 @@ Use a stateless `SecurityFilterChain`:
 - Disable server sessions.
 - Disable form login, HTTP Basic, and request caching.
 - Disable CSRF for this stateless API because it does not authenticate with browser cookies.
-- Return consistent JSON errors without stack traces or internal details.
+- Return subject-validation and Spring MVC errors as sanitized `ProblemDetail` JSON without stack traces or internal details.
+- Keep security and container errors sanitized; they use Spring Boot's default JSON error shape.
 
-Add `Cache-Control: no-store` and `Pragma: no-cache` to successful token responses.
+Keep Spring Security's default cache headers enabled so successful token responses include `Cache-Control: no-store` and `Pragma: no-cache`.
 
 ## 8. Resource Server design
 
@@ -592,7 +600,7 @@ Apply the controls relevant to each OWASP API Security Top 10 category. This is 
 | API1 Broken Object Level Authorization | No object identifier or object-level data endpoint exists; HelloWorld uses only the already validated principal |
 | API2 Broken Authentication | Validate signature, type, issuer, audience, and time claims; use the standard bearer authentication entry point |
 | API3 Broken Object Property Level Authorization | Use fixed immutable response models and no generic entity binding or mass assignment |
-| API4 Unrestricted Resource Consumption | Accept only a small form field with a bounded subject length, return bounded responses, and use short JWKS HTTP timeouts; rate limiting remains a documented requirement before exposing the intentionally public issuer outside the exercise |
+| API4 Unrestricted Resource Consumption | Limit form posts to 16 KB, bound the normalized subject to 100 characters, return bounded responses, and use short JWKS HTTP timeouts; rate limiting remains a documented requirement before exposing the intentionally public issuer outside the exercise |
 | API5 Broken Function Level Authorization | Allow only the exact endpoint and HTTP-method combinations; deny everything else |
 | API6 Unrestricted Access to Sensitive Business Flows | Treat token minting as sensitive; the lack of caller authentication is an explicit constraint and residual risk of the specification |
 | API7 Server-Side Request Forgery | Read the JWKS URI only from trusted startup configuration, never from request input |
@@ -615,6 +623,7 @@ Known residual risks required by the exercise:
 - Anyone who can reach the token endpoint can choose a subject and mint a token.
 - The ephemeral signing key prevents old-key retention and intentional revocation.
 - Local HTTP is acceptable only for the documented local demonstration.
+- Tomcat rejects oversized forms before application validation, but repeated oversized requests can still create noisy error logs; edge limits and rate limiting are required outside this exercise.
 
 These limitations must appear in the README and must not be presented as suitable defaults for a real public authorization service.
 

@@ -62,8 +62,34 @@ class TokenErrorResponseIntegrationTests {
                 .doesNotContain("alice smith", "InvalidSubjectException", "stackTrace", "trace");
     }
 
-    private HttpResponse<String> sendForm(String body) throws IOException, InterruptedException {
+    @Test
+    void rejectsSubjectInQueryStringThroughTheRealServer() throws IOException, InterruptedException {
+        var queryEndpoint = URI.create(tokenEndpoint + "?subject=alice");
+        var response = sendForm(queryEndpoint, "");
+
+        assertProblemDetail(
+                response,
+                "query parameters are not allowed; submit subject in the form body");
+    }
+
+    @Test
+    void documentsSecurityErrorShapeThroughTheRealServer() throws IOException, InterruptedException {
         var request = HttpRequest.newBuilder(tokenEndpoint)
+                .timeout(REQUEST_TIMEOUT)
+                .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
+                .GET()
+                .build();
+        var response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+        assertBootError(response, 403, "Forbidden");
+    }
+
+    private HttpResponse<String> sendForm(String body) throws IOException, InterruptedException {
+        return sendForm(tokenEndpoint, body);
+    }
+
+    private HttpResponse<String> sendForm(URI endpoint, String body) throws IOException, InterruptedException {
+        var request = HttpRequest.newBuilder(endpoint)
                 .timeout(REQUEST_TIMEOUT)
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE)
                 .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
@@ -79,5 +105,14 @@ class TokenErrorResponseIntegrationTests {
         assertThat(JsonPath.<String>read(response.body(), "$.title")).isEqualTo("Invalid token request");
         assertThat(JsonPath.<Integer>read(response.body(), "$.status")).isEqualTo(400);
         assertThat(JsonPath.<String>read(response.body(), "$.detail")).isEqualTo(expectedDetail);
+    }
+
+    private static void assertBootError(HttpResponse<String> response, int status, String error) {
+        assertThat(response.statusCode()).isEqualTo(status);
+        assertThat(response.headers().firstValue(HttpHeaders.CONTENT_TYPE).orElseThrow())
+                .startsWith(MediaType.APPLICATION_JSON_VALUE);
+        assertThat(JsonPath.<Integer>read(response.body(), "$.status")).isEqualTo(status);
+        assertThat(JsonPath.<String>read(response.body(), "$.error")).isEqualTo(error);
+        assertThat(response.body()).doesNotContain("exception", "stackTrace", "trace");
     }
 }

@@ -116,6 +116,20 @@ class TokenControllerIntegrationTests {
                 .andExpect(jsonPath("$.trace").doesNotExist());
     }
 
+    @Test
+    void rejectsSubjectInTheQueryString() throws Exception {
+        mockMvc.perform(post("/api/v1/tokens")
+                        .queryParam("subject", "alice")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(PROBLEM_DETAIL_MEDIA_TYPE))
+                .andExpect(jsonPath("$.title").value("Invalid token request"))
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.detail").value(
+                        "query parameters are not allowed; submit subject in the form body"));
+    }
+
     @ParameterizedTest
     @MethodSource("invalidSubjects")
     void returnsProblemDetailForInvalidSubject(String subject) throws Exception {
@@ -148,7 +162,18 @@ class TokenControllerIntegrationTests {
         mockMvc.perform(post("/api/v1/tokens")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"subject\":\"alice\"}"))
-                .andExpect(status().isUnsupportedMediaType());
+                .andExpect(status().isUnsupportedMediaType())
+                .andExpect(content().contentTypeCompatibleWith(PROBLEM_DETAIL_MEDIA_TYPE))
+                .andExpect(jsonPath("$.title").value("Unsupported Media Type"))
+                .andExpect(jsonPath("$.status").value(415));
+        mockMvc.perform(post("/api/v1/tokens")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .accept(MediaType.APPLICATION_XML)
+                        .param("subject", "alice"))
+                .andExpect(status().isNotAcceptable())
+                .andExpect(content().contentTypeCompatibleWith(PROBLEM_DETAIL_MEDIA_TYPE))
+                .andExpect(jsonPath("$.title").value("Not Acceptable"))
+                .andExpect(jsonPath("$.status").value(406));
     }
 
     private Jwt decode(String accessToken) throws Exception {

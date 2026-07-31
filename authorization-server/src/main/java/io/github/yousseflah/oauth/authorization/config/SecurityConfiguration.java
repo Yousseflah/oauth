@@ -14,6 +14,7 @@ public class SecurityConfiguration {
 
     @Bean
     SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
+        // Keep the default security headers: token responses rely on them for no-store and no-cache.
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)

@@ -1,5 +1,6 @@
 package io.github.yousseflah.oauth.authorization.token;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,7 +22,17 @@ final class TokenController {
     @PostMapping(
             consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
-    TokenResponse issueToken(@RequestParam("subject") String subject) {
+    TokenResponse issueToken(
+            HttpServletRequest request,
+            @RequestParam(value = "subject", required = false) String subject) {
+        // Servlet request parameters merge query and form values; never issue when a query is present.
+        if (request.getQueryString() != null) {
+            throw new QueryParametersNotAllowedException();
+        }
+        if (subject == null) {
+            throw new MissingSubjectException();
+        }
+
         var issuedToken = tokenService.issueToken(subject);
         return new TokenResponse(
                 issuedToken.accessToken(),

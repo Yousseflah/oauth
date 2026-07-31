@@ -4,7 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
-import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -20,10 +19,16 @@ final class TokenExceptionHandler {
         return badRequest(exception.getMessage());
     }
 
-    @ExceptionHandler(MissingServletRequestParameterException.class)
-    ProblemDetail handleMissingSubject(MissingServletRequestParameterException exception) {
-        LOGGER.warn("Rejected token request because required parameter={} is missing", exception.getParameterName());
-        return badRequest("subject is required");
+    @ExceptionHandler(MissingSubjectException.class)
+    ProblemDetail handleMissingSubject(MissingSubjectException exception) {
+        LOGGER.warn("Rejected token request because the subject form parameter is missing");
+        return badRequest(exception.getMessage());
+    }
+
+    @ExceptionHandler(QueryParametersNotAllowedException.class)
+    ProblemDetail handleQueryParameters(QueryParametersNotAllowedException exception) {
+        LOGGER.warn("Rejected token request because query parameters are not allowed");
+        return badRequest(exception.getMessage());
     }
 
     private static ProblemDetail badRequest(String detail) {

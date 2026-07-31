@@ -1,9 +1,14 @@
 spring:
   application:
     name: authorization-server
+  mvc:
+    problemdetails:
+      enabled: true
 
 server:
   port: 9000
+  tomcat:
+    max-http-form-post-size: 16KB
 
 application:
   security:

@@ -23,14 +23,11 @@ class NonAdvertisingBearerTokenAuthenticationEntryPointTest {
     }
 
     @Test
-    void preservesBearerErrorWhileRemovingResourceMetadata() throws Exception {
+    void exposesOnlyTheInvalidTokenErrorCode() throws Exception {
         var response = commence(new InvalidBearerTokenException("Token validation failed"));
 
         assertThat(response.getHeader(HttpHeaders.WWW_AUTHENTICATE))
-                .startsWith("Bearer error=\"invalid_token\"")
-                .contains("error_description=", "error_uri=")
-                .doesNotContain("resource_metadata")
-                .doesNotMatch(".*[,\\s]$");
+                .isEqualTo("Bearer error=\"invalid_token\"");
     }
 
     private MockHttpServletResponse commence(AuthenticationException authenticationException) throws Exception {

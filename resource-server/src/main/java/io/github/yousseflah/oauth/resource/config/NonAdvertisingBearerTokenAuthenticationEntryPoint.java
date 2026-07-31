@@ -8,6 +8,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenAuthenticationEntryPoint;
 import org.springframework.security.web.AuthenticationEntryPoint;
 
@@ -15,6 +17,7 @@ final class NonAdvertisingBearerTokenAuthenticationEntryPoint implements Authent
 
     private static final Pattern RESOURCE_METADATA_PARAMETER =
             Pattern.compile("(?:,\\s*|\\s+)resource_metadata=\"[^\"]*\"$");
+    private static final String INVALID_TOKEN_CHALLENGE = "Bearer error=\"invalid_token\"";
 
     private final BearerTokenAuthenticationEntryPoint delegate = new BearerTokenAuthenticationEntryPoint();
 
@@ -24,6 +27,12 @@ final class NonAdvertisingBearerTokenAuthenticationEntryPoint implements Authent
             HttpServletResponse response,
             AuthenticationException authenticationException) throws IOException, ServletException {
         delegate.commence(request, response, authenticationException);
+
+        if (authenticationException instanceof OAuth2AuthenticationException oauth2Exception
+                && OAuth2ErrorCodes.INVALID_TOKEN.equals(oauth2Exception.getError().getErrorCode())) {
+            response.setHeader(HttpHeaders.WWW_AUTHENTICATE, INVALID_TOKEN_CHALLENGE);
+            return;
+        }
 
         var challenge = response.getHeader(HttpHeaders.WWW_AUTHENTICATE);
         if (challenge != null) {

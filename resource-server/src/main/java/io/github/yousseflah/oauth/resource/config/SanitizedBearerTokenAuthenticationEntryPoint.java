@@ -1,7 +1,6 @@
 package io.github.yousseflah.oauth.resource.config;
 
 import java.io.IOException;
-import java.util.regex.Pattern;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,12 +14,10 @@ import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenAuthenticationEntryPoint;
 import org.springframework.security.web.AuthenticationEntryPoint;
 
-final class NonAdvertisingBearerTokenAuthenticationEntryPoint implements AuthenticationEntryPoint {
+final class SanitizedBearerTokenAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
     private static final Logger LOGGER =
-            LoggerFactory.getLogger(NonAdvertisingBearerTokenAuthenticationEntryPoint.class);
-    private static final Pattern RESOURCE_METADATA_PARAMETER =
-            Pattern.compile("(?:,\\s*|\\s+)resource_metadata=\"[^\"]*\"$");
+            LoggerFactory.getLogger(SanitizedBearerTokenAuthenticationEntryPoint.class);
     private static final String INVALID_TOKEN_CHALLENGE = "Bearer error=\"invalid_token\"";
 
     private final BearerTokenAuthenticationEntryPoint delegate = new BearerTokenAuthenticationEntryPoint();
@@ -32,20 +29,11 @@ final class NonAdvertisingBearerTokenAuthenticationEntryPoint implements Authent
             AuthenticationException authenticationException) throws IOException, ServletException {
         delegate.commence(request, response, authenticationException);
 
+        // Keep Spring's standard discovery challenge, but never expose token-validation diagnostics.
         if (authenticationException instanceof OAuth2AuthenticationException oauth2Exception
                 && OAuth2ErrorCodes.INVALID_TOKEN.equals(oauth2Exception.getError().getErrorCode())) {
             LOGGER.warn("Rejected bearer token: {}", oauth2Exception.getError().getDescription());
             response.setHeader(HttpHeaders.WWW_AUTHENTICATE, INVALID_TOKEN_CHALLENGE);
-            return;
         }
-
-        var challenge = response.getHeader(HttpHeaders.WWW_AUTHENTICATE);
-        if (challenge != null) {
-            response.setHeader(HttpHeaders.WWW_AUTHENTICATE, removeResourceMetadataParameter(challenge));
-        }
-    }
-
-    private static String removeResourceMetadataParameter(String challenge) {
-        return RESOURCE_METADATA_PARAMETER.matcher(challenge).replaceFirst("");
     }
 }

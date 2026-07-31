@@ -270,9 +270,11 @@ Authentication failures return `401 Unauthorized`, including:
 
 Bearer authentication responses must follow RFC 6750:
 
-- A request without credentials returns `401` with `WWW-Authenticate: Bearer`.
+- A request without credentials returns `401` with a `WWW-Authenticate` challenge using the `Bearer` scheme; Spring Security may append standard parameters such as `resource_metadata`.
 - An invalid token returns `401` with a `WWW-Authenticate` Bearer challenge containing `error="invalid_token"`.
 - Error descriptions must not expose token contents, key material, stack traces, or other internal details.
+
+Spring Security also publishes `GET /.well-known/oauth-protected-resource` as RFC 9728 protected-resource metadata. This framework endpoint is outside the exercise's three application endpoints. Its generated capability metadata is not evidence that this project implements mTLS-bound access tokens.
 
 No scope or role check is added because the requirement asks only for an authenticated endpoint.
 
@@ -425,18 +427,18 @@ Spring Security's remote JWKS support handles key selection by `kid` and refresh
 
 ### 8.3 Resource Server security chain
 
-Use explicit stateless `SecurityFilterChain` instances:
+Use one explicit stateless `SecurityFilterChain`:
 
 - Require authentication for `GET /api/v1/hello`.
-- Deny all other requests by default.
+- Deny all other application requests by default.
 - Enable OAuth 2.0 Resource Server JWT support.
 - Disable sessions, form login, HTTP Basic, request caching, and CSRF.
 - Use Spring Security's bearer authentication entry point so `401` responses include the RFC 6750 `WWW-Authenticate` challenge.
-- Shadow and deny Spring Security 7.1's automatically registered RFC 9728 protected-resource metadata endpoint so it cannot expand the specified API surface or publish unsupported mTLS capability metadata.
-- Delegate bearer challenge generation to Spring Security, then remove its `resource_metadata` advertisement because that endpoint is deliberately unavailable.
+- Leave Spring Security 7.1's automatically registered RFC 9728 protected-resource metadata endpoint public by design; it is framework behavior, not an application endpoint required by the exercise.
 - Reduce invalid-token challenges to the RFC 6750 `invalid_token` error code; do not expose decoder exception descriptions, error URIs, claims, or token material.
 - Retain the normalized invalid-token rejection reason in a server-side `WARN` log without logging the request, `Authorization` header, bearer token, subject, or other sensitive data.
-- Return the same `401` bearer challenge for unauthenticated mapped and unmapped requests so authentication is not an endpoint-discovery oracle; authenticated requests to unmapped routes return `403`.
+- Return the same `401` bearer challenge for unauthenticated mapped and unmapped application requests so authentication is not an application-route discovery oracle; authenticated requests to unmapped application routes return `403`. The public framework metadata endpoint is deliberately distinguishable.
+- Keep the custom entry point limited to invalid-token sanitization and safe diagnostics. Do not parse or rewrite standard challenge parameters.
 
 ### 8.4 HelloWorld endpoint
 
@@ -530,9 +532,9 @@ Test:
 - Token signed by an untrusted key returns `401`.
 - An unsecured `alg=none` token returns `401`.
 - An `HS256` token MACed using the RSA public-key bytes returns `401`, proving that the decoder cannot be tricked into treating an asymmetric public key as an HMAC secret.
-- Missing credentials return `401` with `WWW-Authenticate: Bearer`.
+- Missing credentials return `401` with a valid `WWW-Authenticate` Bearer challenge, allowing standard challenge parameters.
 - An invalid token returns `401` with a Bearer challenge containing `error="invalid_token"`.
-- Unmapped endpoints are denied.
+- Unmapped application endpoints are denied.
 
 ### 10.5 Automated key-change integration test
 
@@ -593,7 +595,7 @@ Postman assertions should check:
 - HelloWorld status is `200`.
 - The greeting contains the requested subject.
 - A call without a token returns `401`.
-- The unauthenticated response contains a `WWW-Authenticate: Bearer` challenge.
+- The unauthenticated response contains a valid `WWW-Authenticate` challenge using the `Bearer` scheme.
 
 The first key-change script base64url-decodes token A's JWT header, asserts that `kid` is present, and stores it as `previousKid`. After the documented Authorization Server restart, the second script:
 
@@ -617,7 +619,7 @@ Apply the controls relevant to each OWASP API Security Top 10 category. This is 
 | API6 Unrestricted Access to Sensitive Business Flows | Treat token minting as sensitive; the lack of caller authentication is an explicit constraint and residual risk of the specification |
 | API7 Server-Side Request Forgery | Read the JWKS URI only from trusted startup configuration, never from request input |
 | API8 Security Misconfiguration | Stateless services, explicit security chains and algorithms, no default form login or generated user, and safe errors |
-| API9 Improper Inventory Management | Document the complete endpoint surface, deny undocumented routes, and explicitly shadow Spring Security 7.1's automatically registered protected-resource metadata endpoint |
+| API9 Improper Inventory Management | Document the three application endpoints and Spring Security's public protected-resource metadata endpoint; deny unlisted application routes |
 | API10 Unsafe Consumption of APIs | Trust only the configured JWKS origin; apply HTTP timeouts and let the JOSE library parse and validate returned key data |
 
 Additional rules:
@@ -801,7 +803,7 @@ Tasks:
 3. Implement `GET /api/v1/hello`.
 4. Produce the greeting from the already authenticated JWT subject.
 5. Preserve RFC 6750 bearer authentication challenges.
-6. Add full-context HTTP tests for a valid token, a missing token, the greeting, authenticated and unauthenticated unknown routes, the denied framework metadata route, and `WWW-Authenticate`.
+6. Add full-context HTTP tests for a valid token, a missing token, the greeting, authenticated and unauthenticated unknown application routes, and `WWW-Authenticate`.
 
 Completion condition:
 

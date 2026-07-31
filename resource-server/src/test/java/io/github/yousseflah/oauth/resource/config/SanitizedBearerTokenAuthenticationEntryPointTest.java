@@ -5,7 +5,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.http.HttpHeaders;
-import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.server.resource.InvalidBearerTokenException;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -14,17 +13,10 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(OutputCaptureExtension.class)
-class NonAdvertisingBearerTokenAuthenticationEntryPointTest {
+class SanitizedBearerTokenAuthenticationEntryPointTest {
 
-    private final NonAdvertisingBearerTokenAuthenticationEntryPoint entryPoint =
-            new NonAdvertisingBearerTokenAuthenticationEntryPoint();
-
-    @Test
-    void removesResourceMetadataFromMissingCredentialsChallenge() throws Exception {
-        var response = commence(new AuthenticationCredentialsNotFoundException("Bearer token is required"));
-
-        assertThat(response.getHeader(HttpHeaders.WWW_AUTHENTICATE)).isEqualTo("Bearer");
-    }
+    private final SanitizedBearerTokenAuthenticationEntryPoint entryPoint =
+            new SanitizedBearerTokenAuthenticationEntryPoint();
 
     @Test
     void logsInvalidTokenReasonWhileExposingOnlyTheErrorCode(CapturedOutput output) throws Exception {
@@ -38,10 +30,7 @@ class NonAdvertisingBearerTokenAuthenticationEntryPointTest {
     private MockHttpServletResponse commence(AuthenticationException authenticationException) throws Exception {
         var request = new MockHttpServletRequest("GET", "/api/v1/hello");
         var response = new MockHttpServletResponse();
-        entryPoint.commence(
-                request,
-                response,
-                authenticationException);
+        entryPoint.commence(request, response, authenticationException);
         return response;
     }
 }

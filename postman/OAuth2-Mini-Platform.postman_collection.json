@@ -155,7 +155,7 @@
                 "exec": [
                   "pm.test(\"Missing bearer token is rejected with an RFC 6750 challenge\", function () {",
                   "    pm.response.to.have.status(401);",
-                  "    pm.expect(pm.response.headers.get(\"WWW-Authenticate\")).to.eql(\"Bearer\");",
+                  "    pm.expect(pm.response.headers.get(\"WWW-Authenticate\")).to.match(/^Bearer(?:\\s.+)?$/);",
                   "    pm.expect(pm.response.text()).to.eql(\"\");",
                   "});"
                 ]

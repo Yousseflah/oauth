@@ -95,7 +95,7 @@ The Resource Server does not fetch JWKS during startup. Starting it successfully
 
 ## API
 
-The intentionally small API surface is:
+The intentionally small application API surface is:
 
 | Application | Method and path | Access | Purpose |
 |---|---|---|---|
@@ -103,7 +103,9 @@ The intentionally small API surface is:
 | Authorization Server | `GET /oauth2/jwks` | Public | Publish the current public signing key |
 | Resource Server | `GET /api/v1/hello` | Bearer token required | Return a subject-based greeting |
 
-All other method/path combinations are denied by default. The Resource Server also shadows Spring Security's automatically registered protected-resource metadata route so it cannot expand the documented API or advertise unsupported capabilities.
+All other application method/path combinations are denied by default.
+
+Spring Security 7.1 additionally publishes `GET /.well-known/oauth-protected-resource` as public [RFC 9728 protected-resource metadata](https://www.rfc-editor.org/rfc/rfc9728.html). This is a framework endpoint, not a fourth application feature required by the specification. Its generated document reports `tls_client_certificate_bound_access_tokens: true`; this project does not implement or demonstrate certificate-bound access tokens, so that framework value must not be interpreted as a project capability.
 
 ### Issue a token
 
@@ -173,7 +175,9 @@ A request without credentials is rejected before controller execution:
 curl --include http://localhost:8080/api/v1/hello
 ```
 
-It returns `401 Unauthorized` with `WWW-Authenticate: Bearer`. Invalid tokens return a generic `Bearer error="invalid_token"` challenge; validation details are deliberately omitted from the response and retained only in safe server-side warning logs.
+It returns `401 Unauthorized` with a challenge that starts with the `Bearer` scheme. Spring Security normally appends a `resource_metadata` parameter pointing to its public metadata endpoint.
+
+Invalid tokens deliberately use the smaller `Bearer error="invalid_token"` challenge. This asymmetry is intentional: standard discovery metadata remains available when credentials are absent, while token-validation reasons are omitted from the response and retained only in safe server-side warning logs.
 
 ## JWT profile and validation
 
@@ -278,14 +282,14 @@ This is a scoped security review, not a claim of OWASP certification.
 | API6 Unrestricted Access to Sensitive Business Flows | The unauthenticated minting endpoint is explicitly identified as a residual specification risk |
 | API7 Server-Side Request Forgery | JWKS URI comes only from validated startup configuration; redirects are disabled |
 | API8 Security Misconfiguration | Stateless services, startup validation, no Basic/form login, no server session, sanitized errors |
-| API9 Improper Inventory Management | Complete three-endpoint surface documented; framework metadata endpoint shadowed and denied |
+| API9 Improper Inventory Management | Three application endpoints plus the public framework metadata endpoint documented; unlisted application routes denied |
 | API10 Unsafe Consumption of APIs | Trusted JWKS origin, strict timeouts, no redirects, and established JOSE parsing/validation libraries |
 
 Additional controls:
 
 - The Authorization Server generates one 2048-bit RSA key pair per process and retains the private key only in memory.
 - The JWKS serializes a public-only JWK.
-- Both services are stateless and deny unspecified routes. CSRF is disabled because authentication never relies on browser cookies.
+- Both services are stateless and deny unspecified application routes. CSRF is disabled because authentication never relies on browser cookies.
 - Subjects are normalized and allowlisted; query strings on the token route are rejected.
 - Token responses are non-cacheable, and bearer tokens are accepted only through the `Authorization` header.
 - Authentication responses are generic. Logs contain lifecycle information, token `jti` values, expiry instants, public `kid` values, and normalized failure reasons—not tokens, authorization headers, private keys, or subjects.

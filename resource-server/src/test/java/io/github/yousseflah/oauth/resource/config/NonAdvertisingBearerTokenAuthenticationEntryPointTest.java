@@ -1,6 +1,9 @@
 package io.github.yousseflah.oauth.resource.config;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.core.AuthenticationException;
@@ -10,6 +13,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@ExtendWith(OutputCaptureExtension.class)
 class NonAdvertisingBearerTokenAuthenticationEntryPointTest {
 
     private final NonAdvertisingBearerTokenAuthenticationEntryPoint entryPoint =
@@ -23,11 +27,12 @@ class NonAdvertisingBearerTokenAuthenticationEntryPointTest {
     }
 
     @Test
-    void exposesOnlyTheInvalidTokenErrorCode() throws Exception {
+    void logsInvalidTokenReasonWhileExposingOnlyTheErrorCode(CapturedOutput output) throws Exception {
         var response = commence(new InvalidBearerTokenException("Token validation failed"));
 
         assertThat(response.getHeader(HttpHeaders.WWW_AUTHENTICATE))
                 .isEqualTo("Bearer error=\"invalid_token\"");
+        assertThat(output).contains("WARN", "Rejected bearer token: Token validation failed");
     }
 
     private MockHttpServletResponse commence(AuthenticationException authenticationException) throws Exception {

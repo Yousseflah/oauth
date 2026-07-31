@@ -435,6 +435,7 @@ Use explicit stateless `SecurityFilterChain` instances:
 - Shadow and deny Spring Security 7.1's automatically registered RFC 9728 protected-resource metadata endpoint so it cannot expand the specified API surface or publish unsupported mTLS capability metadata.
 - Delegate bearer challenge generation to Spring Security, then remove its `resource_metadata` advertisement because that endpoint is deliberately unavailable.
 - Reduce invalid-token challenges to the RFC 6750 `invalid_token` error code; do not expose decoder exception descriptions, error URIs, claims, or token material.
+- Retain the normalized invalid-token rejection reason in a server-side `WARN` log without logging the request, `Authorization` header, bearer token, subject, or other sensitive data.
 - Return the same `401` bearer challenge for unauthenticated mapped and unmapped requests so authentication is not an endpoint-discovery oracle; authenticated requests to unmapped routes return `403`.
 
 ### 8.4 HelloWorld endpoint

@@ -6,6 +6,8 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
@@ -18,12 +20,13 @@ final class JwksTestServer implements AutoCloseable {
 
     private final HttpServer server;
     private final ExecutorService executor;
-    private final byte[] responseBody;
+    private final AtomicReference<byte[]> responseBody;
+    private final AtomicInteger successfulRequestCount = new AtomicInteger();
 
     private JwksTestServer(HttpServer server, ExecutorService executor, JWK publicJwk) {
         this.server = server;
         this.executor = executor;
-        this.responseBody = new JWKSet(publicJwk).toString().getBytes(StandardCharsets.UTF_8);
+        this.responseBody = new AtomicReference<>(serializePublicJwk(publicJwk));
     }
 
     static JwksTestServer start(JWK publicJwk) {
@@ -48,6 +51,14 @@ final class JwksTestServer implements AutoCloseable {
         return issuer().resolve(JWKS_PATH);
     }
 
+    void publish(JWK publicJwk) {
+        responseBody.set(serializePublicJwk(publicJwk));
+    }
+
+    int successfulRequestCount() {
+        return successfulRequestCount.get();
+    }
+
     private void handleRequest(HttpExchange exchange) throws IOException {
         try (exchange) {
             if (!"GET".equals(exchange.getRequestMethod())
@@ -56,10 +67,20 @@ final class JwksTestServer implements AutoCloseable {
                 return;
             }
 
+            var currentResponseBody = responseBody.get();
             exchange.getResponseHeaders().set("Content-Type", JWKSet.MIME_TYPE);
-            exchange.sendResponseHeaders(200, responseBody.length);
-            exchange.getResponseBody().write(responseBody);
+            exchange.sendResponseHeaders(200, currentResponseBody.length);
+            exchange.getResponseBody().write(currentResponseBody);
+            successfulRequestCount.incrementAndGet();
         }
+    }
+
+    private static byte[] serializePublicJwk(JWK publicJwk) {
+        if (publicJwk.isPrivate()) {
+            throw new IllegalArgumentException("The JWKS test server accepts public keys only");
+        }
+
+        return new JWKSet(publicJwk).toString().getBytes(StandardCharsets.UTF_8);
     }
 
     @Override

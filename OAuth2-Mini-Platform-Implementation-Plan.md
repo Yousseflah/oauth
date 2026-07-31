@@ -389,6 +389,7 @@ The decoder wiring must follow this sequence:
    - A small audience validator requiring the configured audience
    - A subject validator requiring a nonblank `sub` claim
    - `JwtTypeValidator` requiring exactly the configured `oauth-mini+jwt`
+5. Decorate the validated decoder with a strict raw-payload subject-type check so coercible non-string JSON values are rejected.
 
 The intended structure is:
 
@@ -406,11 +407,13 @@ decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(
         timestampValidator,
         new JwtIssuerValidator(properties.issuer().toString()),
         new AudienceValidator(properties.audience()),
-        new JwtClaimValidator<String>(
-                JwtClaimNames.SUB,
-                subject -> subject != null && !subject.isBlank()),
+        new SubjectValidator(),
         new JwtTypeValidator(properties.tokenType())));
+
+return new StrictSubjectJwtDecoder(decoder);
 ```
+
+Spring and Nimbus normalize some registered claim values before the validator chain sees them. The decoder decorator therefore delegates signature and claim validation first, then uses Nimbus's JWS parser to confirm that the authenticated payload represented `sub` as a JSON string. This prevents numeric or structured values from being coerced into an authenticated principal without manually decoding Base64 or implementing JWT parsing.
 
 Do not call a `JwtValidators.createDefault...` factory and then append the private type validator: Spring Security 7's default chain includes the generic `JwtTypeValidator.jwt()`, which would conflict with `oauth-mini+jwt`.
 

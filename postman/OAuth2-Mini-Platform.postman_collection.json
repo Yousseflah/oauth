@@ -83,19 +83,30 @@
           "name": "Call HelloWorld",
           "event": [
             {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.expect(pm.environment.get(\"accessToken\"), \"run 'Issue token' first\").to.be.a(\"string\").and.not.empty;"
+                ]
+              }
+            },
+            {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 200\", function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
+                  "if (pm.environment.get(\"accessToken\")) {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
                   "",
-                  "pm.test(\"Greeting belongs to the authenticated subject\", function () {",
-                  "    pm.response.to.be.json;",
-                  "    const response = pm.response.json();",
-                  "    pm.expect(response.message).to.eql(`Hello, ${pm.environment.get(\"subject\")}!`);",
-                  "});"
+                  "    pm.test(\"Greeting belongs to the authenticated subject\", function () {",
+                  "        pm.response.to.be.json;",
+                  "        const response = pm.response.json();",
+                  "        pm.expect(response.message).to.eql(`Hello, ${pm.environment.get(\"subject\")}!`);",
+                  "    });",
+                  "}"
                 ]
               }
             }

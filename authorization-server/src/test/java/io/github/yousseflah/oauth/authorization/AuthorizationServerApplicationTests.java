@@ -22,7 +22,7 @@ class AuthorizationServerApplicationTests {
     }
 
     @Test
-    void contextLoads() {
+    void exposesEncoderBackedByTheSingleSigningKey() {
         assertThat(jwtEncoder).isSameAs(keyProvider.jwtEncoder());
     }
 }

@@ -4,7 +4,6 @@ import java.net.URI;
 import java.time.Duration;
 
 import jakarta.validation.constraints.AssertTrue;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -15,9 +14,12 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties("application.security")
 public record AuthorizationProperties(
         @NotNull URI issuer,
-        @NotBlank @Size(max = 100) @Pattern(regexp = "\\S+") String audience,
-        @NotBlank @Pattern(regexp = "oauth-mini\\+jwt") String tokenType,
+        @NotNull @Size(max = 100) @Pattern(regexp = "\\S+") String audience,
+        // Keep the type visible in configuration, but pin it to prevent issuer/consumer contract drift.
+        @NotNull @Pattern(regexp = "oauth-mini\\+jwt") String tokenType,
         @NotNull Duration accessTokenTtl) {
+
+    private static final Duration MAX_ACCESS_TOKEN_TTL = Duration.ofMinutes(15);
 
     @AssertTrue(message = "must be an absolute HTTP or HTTPS URI without user info, query, or fragment")
     public boolean isIssuerValid() {
@@ -34,10 +36,11 @@ public record AuthorizationProperties(
                 || "https".equalsIgnoreCase(issuer.getScheme());
     }
 
-    @AssertTrue(message = "must be greater than zero")
+    @AssertTrue(message = "must be greater than zero and no more than 15 minutes")
     public boolean isAccessTokenTtlValid() {
         return accessTokenTtl != null
                 && !accessTokenTtl.isZero()
-                && !accessTokenTtl.isNegative();
+                && !accessTokenTtl.isNegative()
+                && accessTokenTtl.compareTo(MAX_ACCESS_TOKEN_TTL) <= 0;
     }
 }

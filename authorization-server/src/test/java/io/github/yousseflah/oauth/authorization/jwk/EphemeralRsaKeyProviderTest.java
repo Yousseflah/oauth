@@ -8,7 +8,8 @@ import com.nimbusds.jose.jwk.KeyUse;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
-import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
+import org.springframework.security.oauth2.jwt.JwtClaimsSet;
+import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -46,8 +47,11 @@ class EphemeralRsaKeyProviderTest {
     }
 
     @Test
-    void createsNimbusJwtEncoderWithoutExposingPrivateKey() {
-        assertThat(keyProvider.jwtEncoder()).isInstanceOf(NimbusJwtEncoder.class);
+    void encodesWithCurrentSigningKey() {
+        var claims = JwtClaimsSet.builder().subject("test-subject").build();
+        var jwt = keyProvider.jwtEncoder().encode(JwtEncoderParameters.from(claims));
+
+        assertThat(jwt.getHeaders()).containsEntry("kid", keyProvider.publicJwk().getKeyID());
     }
 
     @Test

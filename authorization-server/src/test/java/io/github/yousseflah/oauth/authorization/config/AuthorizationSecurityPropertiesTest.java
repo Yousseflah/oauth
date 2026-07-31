@@ -20,6 +20,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class AuthorizationSecurityPropertiesTest {
 
+    private static final String ISSUER_URL = "http://localhost:9000";
+    private static final URI ISSUER = URI.create(ISSUER_URL);
+
     private ValidatorFactory validatorFactory;
     private Validator validator;
 
@@ -44,7 +47,7 @@ class AuthorizationSecurityPropertiesTest {
     @Test
     void acceptsMaximumAccessTokenTtl() {
         var properties = new AuthorizationSecurityProperties(
-                URI.create("http://localhost:9000"),
+                ISSUER,
                 "mini-resource-server",
                 "oauth-mini+jwt",
                 Duration.ofMinutes(15));
@@ -55,10 +58,21 @@ class AuthorizationSecurityPropertiesTest {
     @Test
     void acceptsMinimumAccessTokenTtl() {
         var properties = new AuthorizationSecurityProperties(
-                URI.create("http://localhost:9000"),
+                ISSUER,
                 "mini-resource-server",
                 "oauth-mini+jwt",
                 Duration.ofSeconds(1));
+
+        assertThat(validator.validate(properties)).isEmpty();
+    }
+
+    @Test
+    void acceptsHttpsIssuer() {
+        var properties = new AuthorizationSecurityProperties(
+                URI.create("https://issuer.example"),
+                "mini-resource-server",
+                "oauth-mini+jwt",
+                Duration.ofMinutes(5));
 
         assertThat(validator.validate(properties)).isEmpty();
     }
@@ -84,56 +98,98 @@ class AuthorizationSecurityPropertiesTest {
                         "issuerValid"),
                 Arguments.of(
                         new AuthorizationSecurityProperties(
-                                URI.create("http://localhost:9000?untrusted=value"),
+                                URI.create(ISSUER_URL + "?untrusted=value"),
                                 "mini-resource-server",
                                 "oauth-mini+jwt",
                                 Duration.ofMinutes(5)),
                         "issuerValid"),
                 Arguments.of(
                         new AuthorizationSecurityProperties(
-                                URI.create("http://localhost:9000/"),
+                                URI.create(ISSUER_URL + "/"),
                                 "mini-resource-server",
                                 "oauth-mini+jwt",
                                 Duration.ofMinutes(5)),
                         "issuerValid"),
                 Arguments.of(
                         new AuthorizationSecurityProperties(
-                                URI.create("http://localhost:9000/issuer"),
+                                URI.create(ISSUER_URL + "/issuer"),
                                 "mini-resource-server",
                                 "oauth-mini+jwt",
                                 Duration.ofMinutes(5)),
                         "issuerValid"),
                 Arguments.of(
                         new AuthorizationSecurityProperties(
-                                URI.create("http://localhost:9000"),
+                                URI.create("http://operator:secret@localhost:9000"),
+                                "mini-resource-server",
+                                "oauth-mini+jwt",
+                                Duration.ofMinutes(5)),
+                        "issuerValid"),
+                Arguments.of(
+                        new AuthorizationSecurityProperties(
+                                URI.create(ISSUER_URL + "#fragment"),
+                                "mini-resource-server",
+                                "oauth-mini+jwt",
+                                Duration.ofMinutes(5)),
+                        "issuerValid"),
+                Arguments.of(
+                        new AuthorizationSecurityProperties(
+                                URI.create("ftp://localhost:9000"),
+                                "mini-resource-server",
+                                "oauth-mini+jwt",
+                                Duration.ofMinutes(5)),
+                        "issuerValid"),
+                Arguments.of(
+                        new AuthorizationSecurityProperties(
+                                URI.create("mailto:issuer@example.com"),
+                                "mini-resource-server",
+                                "oauth-mini+jwt",
+                                Duration.ofMinutes(5)),
+                        "issuerValid"),
+                Arguments.of(
+                        new AuthorizationSecurityProperties(
+                                null,
+                                "mini-resource-server",
+                                "oauth-mini+jwt",
+                                Duration.ofMinutes(5)),
+                        "issuerValid"),
+                Arguments.of(
+                        new AuthorizationSecurityProperties(
+                                ISSUER,
+                                "mini-resource-server",
+                                "oauth-mini+jwt",
+                                null),
+                        "accessTokenTtlValid"),
+                Arguments.of(
+                        new AuthorizationSecurityProperties(
+                                ISSUER,
                                 " ",
                                 "oauth-mini+jwt",
                                 Duration.ofMinutes(5)),
                         "audience"),
                 Arguments.of(
                         new AuthorizationSecurityProperties(
-                                URI.create("http://localhost:9000"),
+                                ISSUER,
                                 "mini-resource-server",
                                 "JWT",
                                 Duration.ofMinutes(5)),
                         "tokenType"),
                 Arguments.of(
                         new AuthorizationSecurityProperties(
-                                URI.create("http://localhost:9000"),
+                                ISSUER,
                                 "mini-resource-server",
                                 "oauth-mini+jwt",
                                 Duration.ZERO),
                         "accessTokenTtlValid"),
                 Arguments.of(
                         new AuthorizationSecurityProperties(
-                                URI.create("http://localhost:9000"),
+                                ISSUER,
                                 "mini-resource-server",
                                 "oauth-mini+jwt",
                                 Duration.ofMillis(1500)),
                         "accessTokenTtlValid"),
                 Arguments.of(
                         new AuthorizationSecurityProperties(
-                                URI.create("http://localhost:9000"),
+                                ISSUER,
                                 "mini-resource-server",
                                 "oauth-mini+jwt",
                                 Duration.ofMinutes(16)),
@@ -142,7 +198,7 @@ class AuthorizationSecurityPropertiesTest {
 
     private static AuthorizationSecurityProperties validProperties() {
         return new AuthorizationSecurityProperties(
-                URI.create("http://localhost:9000"),
+                ISSUER,
                 "mini-resource-server",
                 "oauth-mini+jwt",
                 Duration.ofMinutes(5));

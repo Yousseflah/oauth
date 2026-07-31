@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class TokenServiceTest {
 
+    private static final String ISSUER_URL = "http://localhost:9000";
     private static final Instant CLOCK_INSTANT = Instant.parse("2026-01-02T03:04:05.678Z");
     private static final Instant ISSUED_AT = CLOCK_INSTANT.truncatedTo(ChronoUnit.SECONDS);
     private static final Duration ACCESS_TOKEN_TTL = Duration.ofMinutes(5);
@@ -35,7 +36,7 @@ class TokenServiceTest {
     void setUpTokenService() {
         jwtEncoder = new CapturingJwtEncoder();
         var securityProperties = new AuthorizationSecurityProperties(
-                URI.create("http://localhost:9000"),
+                URI.create(ISSUER_URL),
                 "mini-resource-server",
                 "oauth-mini+jwt",
                 ACCESS_TOKEN_TTL);
@@ -58,7 +59,7 @@ class TokenServiceTest {
         assertThat(issuedToken.expiresInSeconds()).isEqualTo(ACCESS_TOKEN_TTL.toSeconds());
         assertThat(headers.getAlgorithm()).isEqualTo(SignatureAlgorithm.RS256);
         assertThat(headers.getType()).isEqualTo("oauth-mini+jwt");
-        assertThat(claims.getIssuer().toString()).isEqualTo("http://localhost:9000");
+        assertThat(claims.getIssuer().toString()).isEqualTo(ISSUER_URL);
         assertThat(claims.getSubject()).isEqualTo("alice@example.com");
         assertThat(claims.getAudience()).containsExactly("mini-resource-server");
         assertThat(claims.getIssuedAt()).isEqualTo(ISSUED_AT);

@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "87c1b95c-f57d-4a80-94e1-06ea45a3315e",
     "name": "OAuth 2.0 Mini Platform",
-    "description": "End-to-end checks for the exercise-specific JWT issuer and secured Resource Server. Run the requests in folder order with both local applications running.",
+    "description": "End-to-end checks for the exercise-specific JWT issuer and secured Resource Server. The Core flow can run as a folder; the Key change flow contains a required manual Authorization Server restart checkpoint.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -246,6 +246,271 @@
               ]
             },
             "description": "Reads the public signing keys and verifies that no private RSA parameters are exposed."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Key change",
+      "description": "Manual restart checkpoint: keep the Resource Server running throughout. Send request 1, stop and restart only the Authorization Server, wait until port 9000 is ready, then send requests 2 and 3. Do not run this folder continuously and do not resend request 1 after the restart because it resets the remembered key state.",
+      "item": [
+        {
+          "name": "1 — Issue token A and remember kid",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set(\"accessToken\", \"\");",
+                  "pm.environment.set(\"previousKid\", \"\");",
+                  "pm.environment.set(\"currentKid\", \"\");"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function decodeJwtHeader(token) {",
+                  "    const segments = token.split(\".\");",
+                  "    pm.expect(segments, \"access_token must be a compact JWS\").to.have.lengthOf(3);",
+                  "    const base64 = segments[0].replace(/-/g, \"+\").replace(/_/g, \"/\");",
+                  "    const padding = \"=\".repeat((4 - (base64.length % 4)) % 4);",
+                  "    return JSON.parse(require(\"buffer\").Buffer.from(base64 + padding, \"base64\").toString(\"utf8\"));",
+                  "}",
+                  "",
+                  "pm.test(\"Token A uses the expected signed JWT profile\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.response.to.be.json;",
+                  "",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.access_token).to.be.a(\"string\").and.not.empty;",
+                  "    pm.expect(response.token_type).to.eql(\"Bearer\");",
+                  "    pm.expect(response.expires_in).to.be.a(\"number\").and.above(0);",
+                  "",
+                  "    const header = decodeJwtHeader(response.access_token);",
+                  "    pm.expect(header.alg).to.eql(\"RS256\");",
+                  "    pm.expect(header.typ).to.eql(\"oauth-mini+jwt\");",
+                  "    pm.expect(header.kid).to.be.a(\"string\").and.not.empty;",
+                  "    pm.environment.set(\"previousKid\", header.kid);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "subject",
+                  "value": "{{subject}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{authorizationServerUrl}}/api/v1/tokens",
+              "host": [
+                "{{authorizationServerUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tokens"
+              ]
+            },
+            "description": "Issues token A, validates its JOSE header, and stores its kid as previousKid. After this succeeds, restart only the Authorization Server while leaving the Resource Server running."
+          },
+          "response": []
+        },
+        {
+          "name": "2 — Issue token B and assert new kid",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set(\"accessToken\", \"\");",
+                  "pm.environment.set(\"currentKid\", \"\");",
+                  "pm.expect(pm.environment.get(\"previousKid\"), \"run request 1 before restarting the Authorization Server\").to.be.a(\"string\").and.not.empty;"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function decodeJwtHeader(token) {",
+                  "    const segments = token.split(\".\");",
+                  "    pm.expect(segments, \"access_token must be a compact JWS\").to.have.lengthOf(3);",
+                  "    const base64 = segments[0].replace(/-/g, \"+\").replace(/_/g, \"/\");",
+                  "    const padding = \"=\".repeat((4 - (base64.length % 4)) % 4);",
+                  "    return JSON.parse(require(\"buffer\").Buffer.from(base64 + padding, \"base64\").toString(\"utf8\"));",
+                  "}",
+                  "",
+                  "if (pm.environment.get(\"previousKid\")) {",
+                  "    pm.test(\"Token B has a new signing-key identifier\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "        pm.response.to.be.json;",
+                  "",
+                  "        const response = pm.response.json();",
+                  "        pm.expect(response.access_token).to.be.a(\"string\").and.not.empty;",
+                  "        pm.expect(response.token_type).to.eql(\"Bearer\");",
+                  "        pm.expect(response.expires_in).to.be.a(\"number\").and.above(0);",
+                  "",
+                  "        const header = decodeJwtHeader(response.access_token);",
+                  "        pm.expect(header.alg).to.eql(\"RS256\");",
+                  "        pm.expect(header.typ).to.eql(\"oauth-mini+jwt\");",
+                  "        pm.expect(header.kid).to.be.a(\"string\").and.not.empty;",
+                  "        pm.expect(header.kid, \"kid did not change: restart only the Authorization Server after request 1\").not.to.eql(pm.environment.get(\"previousKid\"));",
+                  "        pm.environment.set(\"currentKid\", header.kid);",
+                  "        pm.environment.set(\"accessToken\", response.access_token);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "subject",
+                  "value": "{{subject}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{authorizationServerUrl}}/api/v1/tokens",
+              "host": [
+                "{{authorizationServerUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tokens"
+              ]
+            },
+            "description": "Run only after restarting the Authorization Server. Issues token B, proves that its kid differs from token A, then stores token B for the Resource Server call."
+          },
+          "response": []
+        },
+        {
+          "name": "3 — Call HelloWorld with token B",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function decodeJwtHeader(token) {",
+                  "    const segments = token.split(\".\");",
+                  "    pm.expect(segments, \"accessToken must be a compact JWS\").to.have.lengthOf(3);",
+                  "    const base64 = segments[0].replace(/-/g, \"+\").replace(/_/g, \"/\");",
+                  "    const padding = \"=\".repeat((4 - (base64.length % 4)) % 4);",
+                  "    return JSON.parse(require(\"buffer\").Buffer.from(base64 + padding, \"base64\").toString(\"utf8\"));",
+                  "}",
+                  "",
+                  "const accessToken = pm.environment.get(\"accessToken\");",
+                  "const previousKid = pm.environment.get(\"previousKid\");",
+                  "const currentKid = pm.environment.get(\"currentKid\");",
+                  "pm.expect(accessToken, \"run request 2 after restarting the Authorization Server\").to.be.a(\"string\").and.not.empty;",
+                  "pm.expect(previousKid, \"run request 1 first\").to.be.a(\"string\").and.not.empty;",
+                  "pm.expect(currentKid, \"run request 2 after the restart\").to.be.a(\"string\").and.not.empty;",
+                  "pm.expect(currentKid).not.to.eql(previousKid);",
+                  "pm.expect(decodeJwtHeader(accessToken).kid).to.eql(currentKid);",
+                  "pm.variables.set(\"keyChangeStateValidated\", \"true\");"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"keyChangeStateValidated\") === \"true\") {",
+                  "    pm.test(\"Resource Server accepts token B without a restart\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "        pm.response.to.be.json;",
+                  "        const response = pm.response.json();",
+                  "        pm.expect(response.message).to.eql(`Hello, ${pm.environment.get(\"subject\")}!`);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{resourceServerUrl}}/api/v1/hello",
+              "host": [
+                "{{resourceServerUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "hello"
+              ]
+            },
+            "description": "Calls the still-running Resource Server with token B and proves that it discovered the new public key."
           },
           "response": []
         }

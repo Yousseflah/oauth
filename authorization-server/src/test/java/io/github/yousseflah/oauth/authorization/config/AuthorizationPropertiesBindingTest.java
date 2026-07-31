@@ -23,7 +23,8 @@ class AuthorizationPropertiesBindingTest {
             assertThat(context.getStartupFailure())
                     .hasMessageContaining("application.security")
                     .rootCause()
-                    .hasMessageContaining("must be an absolute HTTP or HTTPS URI without user info, query, or fragment");
+                    .hasMessageContaining(
+                            "must be an absolute HTTP or HTTPS origin URI without user info, path, query, or fragment");
         });
     }
 

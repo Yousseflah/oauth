@@ -22,12 +22,13 @@ public record AuthorizationProperties(
     private static final Duration MIN_ACCESS_TOKEN_TTL = Duration.ofSeconds(1);
     private static final Duration MAX_ACCESS_TOKEN_TTL = Duration.ofMinutes(15);
 
-    @AssertTrue(message = "must be an absolute HTTP or HTTPS URI without user info, query, or fragment")
+    @AssertTrue(message = "must be an absolute HTTP or HTTPS origin URI without user info, path, query, or fragment")
     public boolean isIssuerValid() {
         if (issuer == null
                 || !issuer.isAbsolute()
                 || issuer.getHost() == null
                 || issuer.getUserInfo() != null
+                || (issuer.getRawPath() != null && !issuer.getRawPath().isEmpty())
                 || issuer.getQuery() != null
                 || issuer.getFragment() != null) {
             return false;

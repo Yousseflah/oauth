@@ -89,6 +89,20 @@ class AuthorizationPropertiesTest {
                         "issuerValid"),
                 Arguments.of(
                         new AuthorizationProperties(
+                                URI.create("http://localhost:9000/"),
+                                "mini-resource-server",
+                                "oauth-mini+jwt",
+                                Duration.ofMinutes(5)),
+                        "issuerValid"),
+                Arguments.of(
+                        new AuthorizationProperties(
+                                URI.create("http://localhost:9000/issuer"),
+                                "mini-resource-server",
+                                "oauth-mini+jwt",
+                                Duration.ofMinutes(5)),
+                        "issuerValid"),
+                Arguments.of(
+                        new AuthorizationProperties(
                                 URI.create("http://localhost:9000"),
                                 " ",
                                 "oauth-mini+jwt",

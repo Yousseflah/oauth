@@ -5,16 +5,14 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 import io.github.yousseflah.oauth.authorization.config.AuthorizationProperties;
-import io.github.yousseflah.oauth.authorization.jwk.EphemeralRsaKeyProvider;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
@@ -24,20 +22,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class TokenServiceTest {
 
-    private static final Instant NOW = Instant.parse("2026-01-02T03:04:05Z");
+    private static final Instant CLOCK_INSTANT = Instant.parse("2026-01-02T03:04:05.678Z");
+    private static final Instant ISSUED_AT = CLOCK_INSTANT.truncatedTo(ChronoUnit.SECONDS);
     private static final Duration ACCESS_TOKEN_TTL = Duration.ofMinutes(5);
 
     private CapturingJwtEncoder jwtEncoder;
-    private EphemeralRsaKeyProvider keyProvider;
     private TokenService tokenService;
-
-    @BeforeAll
-    void generateSigningKey() {
-        keyProvider = new EphemeralRsaKeyProvider();
-    }
 
     @BeforeEach
     void setUpTokenService() {
@@ -47,10 +39,9 @@ class TokenServiceTest {
                 "mini-resource-server",
                 "oauth-mini+jwt",
                 ACCESS_TOKEN_TTL);
-        var clock = Clock.fixed(NOW, ZoneOffset.UTC);
+        var clock = Clock.fixed(CLOCK_INSTANT, ZoneOffset.UTC);
         tokenService = new TokenService(
                 jwtEncoder,
-                keyProvider,
                 properties,
                 new SubjectValidator(),
                 clock);
@@ -67,12 +58,11 @@ class TokenServiceTest {
         assertThat(issuedToken.expiresInSeconds()).isEqualTo(ACCESS_TOKEN_TTL.toSeconds());
         assertThat(headers.getAlgorithm()).isEqualTo(SignatureAlgorithm.RS256);
         assertThat(headers.getType()).isEqualTo("oauth-mini+jwt");
-        assertThat(headers.getKeyId()).isEqualTo(keyProvider.publicJwk().getKeyID());
         assertThat(claims.getIssuer().toString()).isEqualTo("http://localhost:9000");
         assertThat(claims.getSubject()).isEqualTo("alice@example.com");
         assertThat(claims.getAudience()).containsExactly("mini-resource-server");
-        assertThat(claims.getIssuedAt()).isEqualTo(NOW);
-        assertThat(claims.getExpiresAt()).isEqualTo(NOW.plus(ACCESS_TOKEN_TTL));
+        assertThat(claims.getIssuedAt()).isEqualTo(ISSUED_AT);
+        assertThat(claims.getExpiresAt()).isEqualTo(ISSUED_AT.plus(ACCESS_TOKEN_TTL));
         assertThat(claims.getId()).isNotBlank();
         assertThatCode(() -> UUID.fromString(claims.getId())).doesNotThrowAnyException();
     }
